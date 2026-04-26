@@ -1,0 +1,97 @@
+#!/usr/bin/env sh
+# ──────────────────────────────────────────────────────────────────────────────
+# CLAUDE.md pre-push hook
+#
+# Chains two enforcement engines against pushed refs:
+#   1. Test runner (PUSH-01, PUSH-02): RBAC + docxtpl tests when relevant
+#   2. LLM reviewer (LLM-01..03): Semantic CLAUDE.md compliance via Claude CLI
+#
+# Exit codes:
+#   0 - all checks pass (push proceeds)
+#   1 - test failure or LLM violation (push blocked)
+#
+# GPG safety: This script reads all of stdin into a variable BEFORE spawning
+# any subprocess. This prevents subprocesses from consuming the ref data and
+# ensures GPG pinentry is not disrupted (D-04 / INFRA-06).
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Resolve the directory containing this hook script so the Python engine path
+# is correct regardless of working directory.
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# The repo root is the parent of .claude-hooks/ (where this hook lives).
+REPO_ROOT=$(CDPATH= cd -- "$HOOK_DIR/.." && pwd)
+
+# Ensure python3 and git are in PATH for non-interactive shell contexts
+# (git hooks are not login shells — pyenv/homebrew paths may be absent).
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$HOME/.pyenv/shims:$PATH"
+
+# CRITICAL (INFRA-06): Read ALL of stdin IMMEDIATELY, before any subprocess.
+# Git provides pushed ref data on stdin; if a subprocess reads stdin first,
+# the ref data is lost. This must be the first executable statement after PATH export.
+PUSH_REFS=$(cat)
+
+# Resolve the Python interpreter: prefer the project venv so that test_runner.py
+# runs inside the same environment as the application tests.
+# Falls back to system python3 if the venv has not been created yet.
+PYTHON="${REPO_ROOT}/.venv/bin/python"
+[ -f "$PYTHON" ] || PYTHON=python3
+
+# Announce hook is active — distinguishes "hook ran and passed" from "hook bypassed".
+echo "[CLAUDE.md] pre-push hook running" >&2
+
+# ── Stage 1: Test runner ──────────────────────────────────────────────────────
+# Pipe captured ref data via printf (not echo) to avoid misinterpreting content
+# that starts with '-' (review fix 4).
+printf '%s\n' "$PUSH_REFS" | "$PYTHON" "$HOOK_DIR/lib/test_runner.py"
+TEST_EXIT=$?
+if [ "$TEST_EXIT" -ne 0 ]; then
+    exit "$TEST_EXIT"
+fi
+
+# ── Stage 2: Compute diff + commit messages for LLM reviewer ─────────────────
+ZERO_SHA="0000000000000000000000000000000000000000"
+
+# Derive default branch from local symbolic ref (no network call).
+# Same pattern as test_runner.py _get_default_branch().
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
+
+# Use a temp file for diff to avoid MAX_ARG_STRLEN limits on large changesets
+# (review fix 2).
+TMP_DIFF=$(mktemp)
+trap 'rm -f "$TMP_DIFF"' EXIT
+
+COMMIT_MSG=""
+
+# Single loop: compute both diff (appended to temp file) and commit messages
+# (review fix 3). Heredoc feeds PUSH_REFS without a new stdin read.
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+    [ -z "$local_ref" ] && continue
+    if [ "$remote_sha" = "$ZERO_SHA" ]; then
+        # New branch: diff against merge-base with default branch (review fix 1).
+        # Triple fallback: (1) merge-base with default branch,
+        #                  (2) parent commit,
+        #                  (3) the SHA itself (produces empty diff — safe).
+        BASE=$(git merge-base "$local_sha" "origin/$DEFAULT_BRANCH" 2>/dev/null \
+            || git rev-parse "${local_sha}^" 2>/dev/null \
+            || printf '%s' "$local_sha")
+    else
+        BASE="$remote_sha"
+    fi
+    git diff "$BASE" "$local_sha" >> "$TMP_DIFF" 2>/dev/null
+    MSGS=$(git log --format="%s%n%b" "$BASE..$local_sha" 2>/dev/null)
+    COMMIT_MSG="${COMMIT_MSG}${MSGS}"
+done <<EOF
+$PUSH_REFS
+EOF
+
+# Skip LLM reviewer if diff is empty (delete-only push, no-op, etc.)
+if [ ! -s "$TMP_DIFF" ]; then
+    exit 0
+fi
+
+# ── Stage 3: LLM reviewer ────────────────────────────────────────────────────
+export COMMIT_MSG
+cat "$TMP_DIFF" | "$PYTHON" "$HOOK_DIR/lib/llm_reviewer.py"
+exit $?

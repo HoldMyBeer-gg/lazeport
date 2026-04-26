@@ -1,0 +1,11 @@
+[run]
+omit =
+    app/services/master_docx.py
+    .git
+    .venv
+    .vscode
+    .cursor
+    .pytest_cache
+
+[report]
+show_missing = true

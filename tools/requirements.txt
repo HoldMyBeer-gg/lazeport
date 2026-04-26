@@ -1,0 +1,8 @@
+# Security Tools Requirements
+# Install with: pip install -r tools/requirements.txt
+
+# TUI for viewing security findings
+textual>=0.47.0
+
+# Optional: Better syntax highlighting in TUI
+rich>=13.0.0

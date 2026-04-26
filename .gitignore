@@ -1,0 +1,82 @@
+.python-version
+Fluid-Attacks-Results.json
+config.yaml
+tools/config.yaml
+**/Fluid-Attacks-Results.json
+zap-results/
+.vscode/
+behave_screenshots/*
+tmp/
+temp/
+.DS_Store
+data/*.db
+data/.admin_password
+data/.postgres_password
+data/.test_role
+data/.env
+.coverage
+.env
+.env.*
+!.env.example
+.venv
+venv
+frontend/node_modules
+frontend/dist
+# WebP files generated at build from PNG (see scripts/convert-to-webp.js)
+frontend/public/bg/*.webp
+frontend/src/assets/*.webp
+certs/
+htmlcov/
+__pycache__/
+*.pyc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Cursor IDE (local-only)
+.cursor/
+
+# Security scan artifacts and assessment data (never commit)
+*.sarif
+*.sarif.json
+reports/
+exports/
+generated_reports/
+
+# Internal development docs (never commit)
+CURSOR.md
+PHASE2_*.md
+ORG_RESTRUCTURE_DESIGN.md
+SECURITY_AUDIT.md
+SECURITY_IMPLEMENTATION_SUMMARY.md
+*_DESIGN.md
+*_AUDIT.md
+*_SUMMARY.md
+scripts/recover_content.py
+
+# IDE specific
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+Thumbs.db
+.Spotlight-V100
+.Trashes
+
+# Vulndex microservice
+vulndex/build/
+
+# Temporary/development files (root level only)
+/*.db
+/*.rdb
+/dump.rdb
+/full_test*.txt
+
+# Claude Code worktrees (GSD agent isolation dirs — never commit)
+.claude/worktrees/
+
+# Internal planning artifacts (never publish)
+.planning/

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json",
+  "globs": [
+    "**/*.md",
+    "#node_modules",
+    "#frontend/node_modules",
+    "#.git",
+    "#.venv",
+    "#venv"
+  ],
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD034": false,
+    "MD060": false
+  }
+}

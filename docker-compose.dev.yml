@@ -1,0 +1,107 @@
+# Development Docker Compose with hot-reloading
+# Usage: docker-compose -f docker-compose.dev.yml up
+# Requires: Redis (included) for Celery background tasks
+# PostgreSQL: data/.postgres_password is generated on first run (same pattern as data/.admin_password)
+
+services:
+  init:
+    build: .
+    user: root
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/app/scripts:ro
+    environment:
+      - DATA_DIR=/app/data
+    command: python /app/scripts/ensure_postgres_password.py
+    networks:
+      - lazeport
+
+  db:
+    image: postgres:16-alpine@sha256:4c826f2b405c45eeda455839275645cda12ce9a1023d4ff483d4ed7b93ab4c3f
+    env_file:
+      - data/.postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lazeport -d lazeport"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    networks:
+      - lazeport
+
+  redis:
+    image: redis:7-alpine@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    networks:
+      - lazeport
+
+  app:
+    build: .
+    image: lazeport-app
+    ports:
+      - "8000:8000"  # Direct access for development
+    env_file:
+      - data/.postgres_password
+    environment:
+      - LOG_LEVEL=DEBUG
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DEMO_MODE=${DEMO_MODE:-0}
+    volumes:
+      # Mount source code for hot-reloading
+      - ./app:/app/app
+      - ./templates:/app/templates
+      - ./tests:/app/tests
+      - ./data:/app/data
+      - ./frontend/dist:/app/frontend/dist
+      - ./requirements.txt:/app/requirements.txt
+    command: sh -c "pip install --no-cache-dir -q -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lazeport
+
+  celery:
+    build: .
+    image: lazeport-app
+    env_file:
+      - data/.postgres_password
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ./app:/app/app
+      - ./templates:/app/templates
+      - ./tests:/app/tests
+      - ./data:/app/data
+      - ./requirements.txt:/app/requirements.txt
+    command: sh -c "pip install --no-cache-dir -q -r requirements.txt && celery -A app.celery_app worker --loglevel=info"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - lazeport
+
+networks:
+  lazeport:
+    driver: bridge
+
+volumes:
+  postgres_data:

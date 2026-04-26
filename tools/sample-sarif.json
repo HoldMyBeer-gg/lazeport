@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Semgrep",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "sql-injection",
+              "name": "SQL Injection Vulnerability",
+              "shortDescription": {
+                "text": "Potential SQL injection detected"
+              },
+              "fullDescription": {
+                "text": "User input is directly concatenated into SQL query without sanitization, allowing attackers to execute arbitrary SQL commands."
+              },
+              "help": {
+                "text": "Use parameterized queries or an ORM to prevent SQL injection. Never concatenate user input directly into SQL."
+              },
+              "properties": {
+                "tags": ["security", "CWE-89"]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "sql-injection",
+          "level": "error",
+          "message": {
+            "text": "SQL injection vulnerability: user input concatenated into query"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/api.py"
+                },
+                "region": {
+                  "startLine": 42,
+                  "snippet": {
+                    "text": "cursor.execute(f\"SELECT * FROM users WHERE id = {user_id}\")"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

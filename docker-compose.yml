@@ -1,0 +1,111 @@
+# PostgreSQL: data/.postgres_password is generated on first run (same pattern as data/.admin_password)
+
+services:
+  init:
+    build: .
+    user: root
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/app/scripts:ro
+    environment:
+      - DATA_DIR=/app/data
+    command: sh -c "python /app/scripts/ensure_postgres_password.py && chown -R 1001:0 /app/data && chmod 644 /app/data/.postgres_password"
+    networks:
+      - lazeport
+
+  db:
+    image: postgres:16-alpine@sha256:4c826f2b405c45eeda455839275645cda12ce9a1023d4ff483d4ed7b93ab4c3f
+    env_file:
+      - data/.postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lazeport -d lazeport"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    networks:
+      - lazeport
+
+  redis:
+    image: redis:7-alpine@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    networks:
+      - lazeport
+
+  app:
+    build: .
+    image: lazeport-app
+    env_file:
+      - data/.postgres_password
+      - data/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ./templates:/app/templates:ro
+      - ./data:/app/data
+      - ./frontend/dist:/app/frontend/dist:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lazeport
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --no-server-header
+
+  celery:
+    build: .
+    image: lazeport-app
+    env_file:
+      - data/.postgres_password
+      - data/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ./templates:/app/templates:ro
+      - ./data:/app/data
+    command: celery -A app.celery_app worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - lazeport
+
+  caddy:
+    image: caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    ports:
+      - "80:80"       # ACME HTTP-01 challenge + redirect to HTTPS
+      - "443:443"     # HTTPS
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./Caddyfile.docker:/etc/caddy/Caddyfile:ro
+      - ./landing:/srv/landing:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - lazeport
+    depends_on:
+      - app
+
+networks:
+  lazeport:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:

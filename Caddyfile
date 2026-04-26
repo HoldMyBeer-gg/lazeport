@@ -1,0 +1,45 @@
+# Caddy configuration for Lazeport
+# Automatic HTTPS with Let's Encrypt
+
+# For local development (HTTP only)
+# Use this by default
+:8000 {
+    reverse_proxy localhost:8001
+    encode gzip
+    
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
+
+# For local HTTPS testing with mkcert
+# Uncomment this block and comment out the :8000 block above
+# Then run: ./setup_local_https.sh first
+# localhost:8000 {
+#     reverse_proxy localhost:8001
+#     encode gzip
+#     tls certs/localhost.pem certs/localhost-key.pem
+#     
+#     log {
+#         output stdout
+#         format console
+#         level INFO
+#     }
+# }
+
+# For production with domain (automatic SSL via Let's Encrypt)
+# Uncomment and replace with your domain:
+# lazeport.yourdomain.com {
+#     reverse_proxy localhost:8001
+#     encode gzip
+#     
+#     # Automatic HTTPS via Let's Encrypt - no config needed!
+#     
+#     log {
+#         output stdout
+#         format console
+#         level INFO
+#     }
+# }

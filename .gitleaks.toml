@@ -1,0 +1,8 @@
+# Gitleaks configuration — allowlist false positives
+# https://github.com/gitleaks/gitleaks#configuration
+
+[allowlist]
+  description = "Test fixtures and fake credentials"
+  paths = [
+    '''tests/''',
+  ]

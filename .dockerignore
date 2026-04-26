@@ -1,0 +1,77 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docs
+*.md
+!README.md
+docs/
+
+# Frontend source (we only need dist/)
+frontend/node_modules/
+frontend/public/
+frontend/.vite/
+frontend/vite.config.js
+frontend/package.json
+frontend/package-lock.json
+frontend/index.html
+
+# Data (mount as volume instead)
+data/*.db
+data/*.db-*
+
+# Env files (use env_file or environment in docker-compose)
+.env
+.env.*
+
+# Logs
+*.log
+
+# Caddy files (not needed in app container)
+Caddyfile
+Caddyfile.docker
+PRODUCTION.md
+
+# Scripts
+run*.sh
+run*.bat
+run*.ps1
+
+# Tests
+tests/
+behave/
+features/
+
+# Misc
+tmp/
+temp/

@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# ──────────────────────────────────────────────────────────────────────────────
+# CLAUDE.md pre-commit hook
+#
+# Invokes the static checks engine against the git staged index.
+# Blocks the commit if any hard violations are found (Rule 2.1.1, Rule 3,
+# Rule 6, Rule 11).
+#
+# Exit codes:
+#   0 — no hard violations (commit proceeds)
+#   1 — one or more hard violations found (commit blocked)
+#
+# GPG safety: This script does NOT read from stdin and does NOT write to
+# stdout. All output goes through the Python engine to stderr. This ensures
+# GPG pinentry flow is never interrupted.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Resolve the directory containing this hook script so the Python engine path
+# is correct regardless of working directory.
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# Ensure python3 and git are in PATH for non-interactive shell contexts
+# (git hooks are not login shells — pyenv/homebrew paths may be absent).
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$HOME/.pyenv/shims:$PATH"
+
+# Invoke the static checks engine.  The engine reads only the staged index
+# (via `git show :path`) and writes all output to stderr.
+python3 "$HOOK_DIR/lib/static_checks.py" --staged
+
+exit $?

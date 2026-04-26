@@ -1,0 +1,10 @@
+# LLM provider for pre-push review
+# Options: gemini, ollama, claude
+LLM_PROVIDER=claude
+
+# Gemini configuration
+GEMINI_MODEL=gemini-3-flash-preview
+
+# Ollama configuration
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen3-coder:30b
