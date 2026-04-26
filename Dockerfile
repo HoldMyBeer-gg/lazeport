@@ -12,6 +12,9 @@ COPY --chown=app:app templates/ ./templates/
 COPY --chown=app:app frontend/dist/ ./frontend/dist/
 COPY --chown=app:app frontend/src/i18n/locales/ ./frontend/src/i18n/locales/
 
+RUN mkdir -p /app/data && chown app:app /app/data
+VOLUME /app/data
+
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
