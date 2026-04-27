@@ -52,7 +52,6 @@ async def lifespan(app: FastAPI):
     if settings.auth_enabled:
         admin_password = ensure_bootstrap_admin(adapter)
         if admin_password:
-            log.info("Bootstrap admin credentials created - check container logs for initial password")
             pw_file = Path("data/.admin_password")
             pw_file.parent.mkdir(parents=True, exist_ok=True)
             pw_file.write_text(f"ADMIN_PASSWORD={admin_password}\n")
@@ -60,7 +59,21 @@ async def lifespan(app: FastAPI):
                 pw_file.chmod(0o600)
             except PermissionError:
                 log.warning("chmod 600 failed for %s (filesystem may not support POSIX permissions)", pw_file)
-            log.info("Admin password written to data/.admin_password")
+            banner = (
+                "\n"
+                "============================================================\n"
+                "  LAZEPORT FIRST-RUN: bootstrap admin account created\n"
+                "------------------------------------------------------------\n"
+                "  email:    admin@local.domain\n"
+                f"  password: {admin_password}\n"
+                "------------------------------------------------------------\n"
+                "  This password is shown ONCE. Also saved to:\n"
+                "    data/.admin_password  (chmod 600)\n"
+                "  Log in and change it immediately.\n"
+                "============================================================\n"
+            )
+            print(banner, flush=True)
+            log.info("Bootstrap admin credentials created (see stdout banner; also at data/.admin_password)")
     from app.config import Settings
     if settings.session_secret_key == Settings._DEFAULT_SESSION_SECRET:
         log.warning("SESSION_SECRET_KEY is using the default value - set a strong random secret in production!")
