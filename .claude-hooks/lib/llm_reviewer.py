@@ -46,8 +46,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import httpx
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -141,6 +139,13 @@ def _run_ollama_review(diff_text: str, commit_msg: str, config: dict[str, str]) 
         None — Ollama unreachable (ConnectError / ConnectTimeout); caller
                should fall back to claude CLI.
     """
+    try:
+        import httpx
+    except ImportError:
+        log.warning("httpx not installed — Ollama provider unavailable, falling back to claude CLI")
+        sys.stderr.write("httpx not installed -- falling back to claude CLI\n")
+        return None
+
     user_prompt = (
         f"Commit message: {commit_msg}\n\n"
         "<untrusted_diff>\n"
