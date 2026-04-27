@@ -31,11 +31,28 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$HOME/.pyenv/shim
 # the ref data is lost. This must be the first executable statement after PATH export.
 PUSH_REFS=$(cat)
 
-# Resolve the Python interpreter: prefer the project venv so that test_runner.py
-# runs inside the same environment as the application tests.
-# Falls back to system python3 if the venv has not been created yet.
-PYTHON="${REPO_ROOT}/.venv/bin/python"
-[ -f "$PYTHON" ] || PYTHON=python3
+# Resolve the Python interpreter so test_runner.py and llm_reviewer.py run in
+# the environment that has the project's deps (pytest, httpx, etc).
+# Resolution order:
+#   1. $LAZEPORT_HOOK_PYTHON         — explicit override for CI / unusual setups
+#   2. $VIRTUAL_ENV/bin/python       — the venv the user has activated (git
+#                                       hooks inherit env from the invoking shell)
+#   3. ${REPO_ROOT}/{.venv,venv,env}/bin/python — common project-local venv names
+#   4. python3                        — last resort; will likely fail if deps missing
+if [ -n "$LAZEPORT_HOOK_PYTHON" ] && [ -x "$LAZEPORT_HOOK_PYTHON" ]; then
+    PYTHON="$LAZEPORT_HOOK_PYTHON"
+elif [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+    PYTHON="$VIRTUAL_ENV/bin/python"
+else
+    PYTHON=
+    for candidate in .venv venv env; do
+        if [ -x "${REPO_ROOT}/${candidate}/bin/python" ]; then
+            PYTHON="${REPO_ROOT}/${candidate}/bin/python"
+            break
+        fi
+    done
+    [ -n "$PYTHON" ] || PYTHON=python3
+fi
 
 # Announce hook is active — distinguishes "hook ran and passed" from "hook bypassed".
 echo "[CLAUDE.md] pre-push hook running" >&2
