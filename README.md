@@ -1,8 +1,10 @@
 # Lazeport
 
-Modern pentest reporting platform: organize clients and reports, generate AI-structured findings from raw notes, manage templates, create summaries, and export professional master DOCX reports.
+Paste messy notes from manual testing. Get a full professional DOCX report with structured findings and step-by-step validation guidance so your team can actually reproduce what you found.
 
-**Cross-platform:** Windows, macOS, and Linux.
+No more "here's a vuln, good luck."
+
+**Cross-platform:** Windows, macOS, and Linux. **Bring your own model:** Ollama on your laptop, OpenAI, Anthropic, Gemini, Groq, Together, DeepSeek, Mistral, or anything that speaks the OpenAI API. Your notes go to the provider you picked and nowhere else.
 
 <table>
   <tr>
@@ -60,6 +62,8 @@ run.bat           # Windows: backend only (start redis-server and a Celery worke
 
 ## Typical Workflow
 
+From raw notes to a report people will actually read, in six steps:
+
 1. **Set up clients** → "My Clients" → add client organizations
 2. **Create reports** → "My Reports" → select client → new report
 3. **Manage templates** → "My Templates" → create finding templates, upload master `.docx` templates
@@ -74,6 +78,8 @@ run.bat           # Windows: backend only (start redis-server and a Celery worke
 <details>
 <summary><strong>Features</strong></summary>
 
+Everything below ships in the box. No plugins, no "contact sales".
+
 ### Core Workflow
 
 | Feature | What it does |
@@ -82,6 +88,7 @@ run.bat           # Windows: backend only (start redis-server and a Celery worke
 | **Report Management** | Create multiple reports per client. Track findings per engagement. |
 | **Scanner Import** | Drag-and-drop SARIF, Burp XML, Nessus or OpenVAS XML, or CSV into the findings page. Auto-merges duplicates, preserves locations, and queues for AI generation. Supports resume for large imports. |
 | **Finding Generation** | Paste raw notes from manual testing or scanners. AI structures them into professional findings with proper sections (Summary, Details, Remediation, References, etc.). |
+| **Validation Guidance** | Step-by-step reproduction instructions per finding, so the dev who gets the ticket can confirm the bug instead of guessing. |
 | **AI Self-Check** | Optional multi-pass validation — AI reviews its own output for accuracy before finalizing. |
 | **Evidence Anchoring** | SARIF imports anchor all file paths and metadata to scanner output, preventing hallucinations and ensuring correct SARIF round-trips. Link evidence to exact source locations (URL, line, byte range). |
 | **Severity & CVSS** | Automatic severity classification (Critical/High/Medium/Low/Informational) with CVSS 3.1 vector support. AI uses your org's severity criteria from master templates. |
