@@ -6,8 +6,13 @@ import re
 
 
 _OPEN_TAG_RE = {
-    tag: re.compile(rf"<{tag}[^<>]*>", re.IGNORECASE) for tag in ("table", "tr")
+    tag: re.compile(rf"<{tag}[^<>]*>", re.IGNORECASE) for tag in ("table", "tr", "td")
 }
+# A "simple" cell holds text and opening tags only (no closing tags, no stray
+# '<'). Mirrors the content class of the previous `<td ...>(...)</td>` search
+# so label extraction behaves exactly as before, but checked with fullmatch on
+# one cell's inner HTML, which is linear.
+_SIMPLE_TD_CONTENT_RE = re.compile(r"[^<]*(?:<[^/<>][^<>]*>[^<]*)*")
 
 
 def _iter_elements(html: str, tag: str):
@@ -30,6 +35,14 @@ def _iter_elements(html: str, tag: str):
             return
         yield html[m.end():close]
         pos = close + len(close_tag)
+
+
+def _first_simple_td(row_html: str) -> str | None:
+    """Inner HTML of the first <td> in a row whose content has no closing tags, else None."""
+    for inner in _iter_elements(row_html, "td"):
+        if _SIMPLE_TD_CONTENT_RE.fullmatch(inner):
+            return inner
+    return None
 
 
 def _headings_from_markdown(text: str) -> list[str]:
@@ -95,9 +108,9 @@ def template_table_rows(template: str) -> tuple[str | None, list[str]]:
         return (None, [])
     row_labels = []
     for row_html in _iter_elements(table_body, "tr"):
-        td_match = re.search(r"<td[^<>]*>([^<]*(?:<[^/<>][^<>]*>[^<]*)*)</td>", row_html, re.IGNORECASE)
-        if td_match:
-            label = re.sub(r"<[^<>]+>", "", td_match.group(1)).strip()
+        td_inner = _first_simple_td(row_html)
+        if td_inner is not None:
+            label = re.sub(r"<[^<>]+>", "", td_inner).strip()
             if label:
                 row_labels.append(label)
     if not row_labels:
@@ -123,9 +136,9 @@ def template_all_table_row_labels(template: str) -> list[str]:
     out = []
     for table_body in _iter_elements(template, "table"):
         for row_html in _iter_elements(table_body, "tr"):
-            td_match = re.search(r"<td[^<>]*>([^<]*(?:<[^/<>][^<>]*>[^<]*)*)</td>", row_html, re.IGNORECASE)
-            if td_match:
-                label = re.sub(r"<[^<>]+>", "", td_match.group(1)).strip()
+            td_inner = _first_simple_td(row_html)
+            if td_inner is not None:
+                label = re.sub(r"<[^<>]+>", "", td_inner).strip()
                 if label:
                     out.append(label)
     return out
