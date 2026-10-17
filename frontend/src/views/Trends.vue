@@ -1229,7 +1229,7 @@ onUnmounted(() => {
 .dd-checkbox-checked {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .dd-radio {
@@ -1984,7 +1984,7 @@ onUnmounted(() => {
     right: 20px;
     z-index: 999;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     border: none;
     border-radius: 999px;
     padding: 14px 20px;

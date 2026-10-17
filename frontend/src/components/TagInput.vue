@@ -202,7 +202,7 @@ onMounted(loadTags)
   border-radius: 12px;
   font-size: 0.8rem;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
   white-space: nowrap;
   line-height: 1.4;
 }

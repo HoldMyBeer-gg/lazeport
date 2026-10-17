@@ -42,6 +42,7 @@
   --danger: #dc322f;
   --danger-bg: rgba(220, 50, 47, 0.1);
   --primary: #2aa198;
+  --on-primary: #fff;  /* text on a solid --primary fill */
   --primary-bg: rgba(42, 161, 152, 0.15);
 
   --nav-text: #839496;
@@ -137,6 +138,7 @@
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.1);
   --primary: #fb7185;
+  --on-primary: #0c0c0c;  /* text on a solid --primary fill */
   --primary-bg: rgba(251, 113, 133, 0.15);
 
   --nav-text: #a1a1aa;
@@ -232,6 +234,7 @@
   --danger: #ff3366;
   --danger-bg: rgba(255, 51, 102, 0.1);
   --primary: #00ffa3;
+  --on-primary: #06060b;  /* text on a solid --primary fill */
   --primary-bg: rgba(0, 255, 163, 0.15);
 
   --nav-text: #7777aa;
@@ -290,7 +293,7 @@
 
 /* Terminal theme: dark text on bright green buttons for landing-page look */
 [data-theme="terminal"] .btn-primary,
-[data-theme="terminal"] button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn) {
+[data-theme="terminal"] button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn):not(.tag-remove) {
   color: #06060b;
 }
 
@@ -325,6 +328,8 @@
   --btn-ghost-text: #333333;
 
   --primary: #0f766e;
+
+  --on-primary: #fff;  /* text on a solid --primary fill */
   --primary-bg: rgba(15, 118, 110, 0.10);
   --info: #0f766e;
   --info-bg: rgba(15, 118, 110, 0.1);
@@ -756,11 +761,11 @@ button {
   transition: background 0.15s, opacity 0.15s;
 }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary, button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn) {
+.btn-primary, button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn):not(.tag-remove) {
   background: var(--btn-primary-bg);
   color: #fff;
 }
-.btn-primary:hover, button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn):hover {
+.btn-primary:hover, button:not(.secondary):not(.danger):not(.ghost):not(.theme-btn):not(.theme-option):not(.filter-pill):not(.preset-trigger):not(.breadcrumb-link):not(.link-btn):not(.client-name-btn):not(.tag-remove):hover {
   background: var(--btn-primary-hover);
 }
 button.secondary {

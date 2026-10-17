@@ -552,7 +552,7 @@ onUnmounted(() => {
 
 .theme-popup button.active {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary);
 }
 
 /* RTL overrides */

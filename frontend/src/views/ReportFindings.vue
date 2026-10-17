@@ -3874,7 +3874,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--primary);
-  color: white;
+  color: var(--on-primary);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -4070,12 +4070,12 @@ onUnmounted(() => {
 }
 .findings-tag-chip-active {
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
   border-color: var(--primary);
 }
 .findings-tag-chip-active:hover {
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
 }
 .findings-tag-clear {
   font-size: 11px;
