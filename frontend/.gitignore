@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Stray SQLite test DB created when pytest runs from this directory
+data/

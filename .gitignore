@@ -20,7 +20,7 @@ data/.env
 !.env.example
 .venv
 venv
-frontend/node_modules
+node_modules/
 frontend/dist
 # WebP files generated at build from PNG (see scripts/convert-to-webp.js)
 frontend/public/bg/*.webp
@@ -75,8 +75,5 @@ vulndex/build/
 /dump.rdb
 /full_test*.txt
 
-# Claude Code worktrees (GSD agent isolation dirs — never commit)
+# Claude Code worktrees (never commit)
 .claude/worktrees/
-
-# Internal planning artifacts (never publish)
-.planning/

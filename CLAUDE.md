@@ -104,7 +104,6 @@ You are the most elite and skilled coder in the world. As such, you:
 
     Vue Router 4 silently ignores `router.push()` when the target route matches the currently active route (NavigationDuplicated). If navigation or a UI action must fire even when the user is already on the destination page, use a different mechanism: change a query param to force the route to differ, emit an event to the target component, or use a programmatic scroll/focus instead.
 
-<!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
 **CLAUDE.md Compliance Enforcement**
@@ -120,18 +119,16 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - **Compatibility**: Must not break GPG signing, existing pnpm/npm scripts, or the `run.sh` dev server workflow
 - **Dependencies**: No new Python packages for static checks — use stdlib only; LLM review may use the `anthropic` SDK already available in the project
 - **Distribution**: Shell scripts committed to `.claude-hooks/`; one `install-hooks.sh` for setup
-<!-- GSD:project-end -->
 
-<!-- GSD:stack-start source:codebase/STACK.md -->
 ## Technology Stack
 
 ## Languages
-- Python 3.12 - Backend API, data processing, report generation, background tasks (see `Dockerfile`)
+- Python 3.13 - Backend API, data processing, report generation, background tasks (see `Dockerfile`)
 - JavaScript/Vue 3 - Frontend SPA with component-based UI (see `frontend/package.json`)
 - Jinja2 - Template rendering for DOCX document generation (via `docxtpl`)
 - Markdown - Content transformation and processing
 ## Runtime
-- Python 3.12-slim (container: `python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab`)
+- Python 3.13-slim (container: `python:3.13-slim@sha256:a0779d7c12fc20be6ec6b4ddc901a4fd7657b8a6bc9def9d3fde89ed5efe0a3d`)
 - Node.js >=18.0.0 (frontend build requirement)
 - pip - Python dependencies (see `requirements.txt`)
 - pnpm 10.30.3 - Frontend dependencies (see `frontend/package.json`)
@@ -194,7 +191,7 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - `DEMO_MODE` - Seed demo data for dashboard/trends (for testing)
 - `LOG_LEVEL` - Python logging level (default: INFO)
 - `vite.config.js` - Frontend build with Vue plugin, CSS chunking, API proxying
-- `Dockerfile` - Multi-stage container build with Python 3.12-slim
+- `Dockerfile` - Multi-stage container build with Python 3.13-slim
 - `docker-compose.yml` - Full stack orchestration (PostgreSQL, Redis, FastAPI app, Celery worker, Caddy reverse proxy)
 ## Platform Requirements
 - Python 3.12+
@@ -214,9 +211,7 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - OpenAI API, Anthropic, Google Gemini, Groq, Together, DeepSeek, or Mistral API keys for LLM generation
 - Ollama local LLM server (for offline/private LLM inference)
 - SMTP server for email notifications
-<!-- GSD:stack-end -->
 
-<!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
 ## Naming Patterns
@@ -304,9 +299,7 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - Custom `ValidatedString` class for input validation
 - Validators applied via Pydantic `field_validator` decorator
 - Security validation in `app/validation.py` module with constants and patterns
-<!-- GSD:conventions-end -->
 
-<!-- GSD:architecture-start source:ARCHITECTURE.md -->
 ## Architecture
 
 ## Pattern Overview
@@ -430,24 +423,3 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - Captured: action, resource_type, resource_id, user, IP, user_agent, timestamp
 - Scope: Organization-level; users can view org audit logs if org_admin+ role
 - Pattern: Synchronous write to audit_log table; never dropped
-<!-- GSD:architecture-end -->
-
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
-
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
-
-Use these entry points:
-- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd:debug` for investigation and bug fixing
-- `/gsd:execute-phase` for planned phase work
-
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
-
-<!-- GSD:profile-start -->
-## Developer Profile
-
-> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
