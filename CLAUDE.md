@@ -129,7 +129,7 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - Markdown - Content transformation and processing
 ## Runtime
 - Python 3.13-slim (container: `python:3.13-slim@sha256:a0779d7c12fc20be6ec6b4ddc901a4fd7657b8a6bc9def9d3fde89ed5efe0a3d`)
-- Node.js >=18.0.0 (frontend build requirement)
+- Node.js >=20.9.0 (frontend build requirement)
 - pip - Python dependencies (see `requirements.txt`)
 - pnpm 10.30.3 - Frontend dependencies (see `frontend/package.json`)
 ## Frameworks
@@ -195,7 +195,7 @@ A set of git hooks and static analysis tooling that enforces the Lazeport CLAUDE
 - `docker-compose.yml` - Full stack orchestration (PostgreSQL, Redis, FastAPI app, Celery worker, Caddy reverse proxy)
 ## Platform Requirements
 - Python 3.12+
-- Node.js 18.0.0+
+- Node.js 20.9.0+
 - pnpm 10.30.3+
 - PostgreSQL 16+ (or SQLite for local testing)
 - Redis 7+ (for Celery/sessions)

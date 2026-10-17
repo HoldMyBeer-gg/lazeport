@@ -1,6 +1,6 @@
 // Enforce Node version for Vite build (avoids crypto.hash and similar issues).
-const minMajor = 18;
-const minMinor = 0;
+const minMajor = 20;
+const minMinor = 9;
 const v = process.versions.node.split('.').map(Number);
 const major = v[0] || 0;
 const minor = v[1] || 0;
