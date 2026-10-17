@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 
 import httpx
 
+from app.validation import validate_outbound_url
+
 log = logging.getLogger(__name__)
 
 
@@ -41,7 +43,13 @@ class JiraClient:
             url: Jira instance URL (e.g., https://yourorg.atlassian.net)
             email: User email for authentication
             api_token: API token from Atlassian account settings
+
+        Raises:
+            OutboundUrlError: if the URL is not http(s) or points at a private/
+                internal address (unless ALLOW_PRIVATE_JIRA_URLS is enabled).
         """
+        from app.config import settings  # call-time import: tests reload app.config
+        validate_outbound_url(url, allow_private=settings.allow_private_jira_urls, purpose="Jira URL")
         self.url = url.rstrip('/')
         self.auth = (email, api_token)
         self.headers = {

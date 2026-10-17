@@ -895,7 +895,6 @@ def disable_2fa(
     session_created_str = request.session.get("session_created_at")
     if session_created_str:
         try:
-            from datetime import datetime
             session_created = datetime.fromisoformat(session_created_str)
             session_age_minutes = (datetime.utcnow() - session_created).total_seconds() / 60
             if session_age_minutes > 15:
@@ -1001,7 +1000,6 @@ def regenerate_backup_codes(
     session_created_str = request.session.get("session_created_at")
     if session_created_str:
         try:
-            from datetime import datetime
             session_created = datetime.fromisoformat(session_created_str)
             session_age_minutes = (datetime.utcnow() - session_created).total_seconds() / 60
             if session_age_minutes > 15:

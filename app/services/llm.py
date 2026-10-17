@@ -11,6 +11,8 @@ from typing import Dict, List
 
 import httpx
 
+from app.validation import validate_outbound_url
+
 log = logging.getLogger(__name__)
 
 
@@ -63,6 +65,31 @@ ALLOWED_PROVIDERS: set[str] = set(PROVIDER_PRESETS.keys()) | _ALWAYS_PROVIDERS
 
 DEFAULT_PROVIDER = "openai"
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+
+
+def ensure_safe_base_url(base_url_override: str | None) -> None:
+    """
+    SSRF guard for user-supplied LLM base URLs.
+
+    The built-in Ollama default and the provider presets are trusted. Any other
+    value must pass ``validate_outbound_url``; private/loopback hosts are only
+    accepted when ``ALLOW_PRIVATE_LLM_URLS`` is enabled. Raises
+    ``app.validation.OutboundUrlError`` on rejection.
+    """
+    if not base_url_override:
+        return
+    normalized = str(base_url_override).strip().rstrip("/")
+    trusted = {DEFAULT_OLLAMA_BASE_URL.rstrip("/")} | {
+        preset["base_url"].rstrip("/") for preset in PROVIDER_PRESETS.values()
+    }
+    if normalized in trusted:
+        return
+    from app.config import settings  # call-time import: tests reload app.config
+    validate_outbound_url(
+        normalized,
+        allow_private=settings.allow_private_llm_urls,
+        purpose="LLM base URL",
+    )
 DEFAULT_MODELS: Dict[str, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-sonnet-4-20250514",
@@ -136,6 +163,7 @@ def _llm_client(base_url: str, api_key: str, timeout: float = 60.0):
 
 def _resolve_provider(provider_override: str | None, base_url_override: str | None, api_key_override: str | None):
     """Resolve provider, base_url, and api_key from request/UI overrides and presets."""
+    ensure_safe_base_url(base_url_override)
     provider = (provider_override or DEFAULT_PROVIDER).lower()
 
     if provider == "ollama":
@@ -455,6 +483,7 @@ def vision_completion(
 
 def list_ollama_models(base_url_override: str | None = None) -> list[str]:
     import json
+    ensure_safe_base_url(base_url_override)
     base_url = (base_url_override or DEFAULT_OLLAMA_BASE_URL).rstrip("/")
     url = f"{base_url}/api/tags"
     try:

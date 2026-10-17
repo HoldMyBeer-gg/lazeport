@@ -192,7 +192,7 @@ def apply_severity_override(structured: Dict[str, Any], severity: str, reason: s
         reason_text = reason.strip().rstrip(".")
         if reason_text:
             # Normalize common prefixes to avoid "Medium because ... because ..."
-            reason_text = re.sub(rf"^\s*{severity}\s+because\s+", "", reason_text, flags=re.IGNORECASE)
+            reason_text = re.sub(rf"^\s*{re.escape(severity)}\s+because\s+", "", reason_text, flags=re.IGNORECASE)
             reason_text = re.sub(r"^\s*because\s+", "", reason_text, flags=re.IGNORECASE)
             reason_text = reason_text[0].upper() + reason_text[1:]
             note = f"Severity is rated {severity} because {reason_text}."

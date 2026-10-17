@@ -5,7 +5,10 @@ Provides reusable validators for common patterns to prevent injection attacks,
 data corruption, and ensure data integrity.
 """
 from typing import Any
+import ipaddress
 import re
+import socket
+from urllib.parse import urlparse
 
 # Security constraints
 MAX_NAME_LENGTH = 255
@@ -116,6 +119,87 @@ def validate_url(v: str | None) -> str | None:
         raise ValueError(f"URL must be {MAX_URL_LENGTH} characters or less")
     if not v.startswith(('http://', 'https://')):
         raise ValueError("URL must start with http:// or https://")
+    return v
+
+
+
+class OutboundUrlError(ValueError):
+    """Raised when a user-supplied URL may not be fetched by the server (SSRF guard)."""
+
+
+def _is_disallowed_address(addr: str) -> bool:
+    """True if an IP address points at a loopback, private, link-local, or otherwise non-public range."""
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return True
+    # IPv4-mapped IPv6 (::ffff:10.0.0.1) must be judged by the embedded IPv4 address.
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return (
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def _resolve_host(host: str, port: int) -> list[str]:
+    """Resolve a hostname to every address it answers with (TCP). Separated so tests can stub DNS."""
+    infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    return [info[4][0] for info in infos]
+
+
+def validate_outbound_url(url: str | None, *, allow_private: bool = False, purpose: str = "URL") -> str:
+    """
+    Validate a URL the server will fetch on a user's behalf (SSRF guard).
+
+    Enforces http/https, no embedded credentials, a resolvable host, and, unless
+    ``allow_private`` is set, that every address the host resolves to is public
+    (no loopback, RFC 1918, link-local, cloud metadata, multicast, or reserved
+    ranges). Returns the URL unchanged on success.
+
+    Note: resolution happens at validation time; a hostname that later changes
+    its answer (DNS rebinding) is not defended against here.
+    """
+    if url is None or not str(url).strip():
+        raise OutboundUrlError(f"{purpose} is required")
+    v = str(url).strip()
+    if len(v) > MAX_URL_LENGTH:
+        raise OutboundUrlError(f"{purpose} must be {MAX_URL_LENGTH} characters or less")
+    try:
+        parsed = urlparse(v)
+    except ValueError as e:
+        raise OutboundUrlError(f"{purpose} is not a valid URL") from e
+    if parsed.scheme not in ("http", "https"):
+        raise OutboundUrlError(f"{purpose} must start with http:// or https://")
+    if parsed.username is not None or parsed.password is not None:
+        raise OutboundUrlError(f"{purpose} must not contain embedded credentials")
+    host = parsed.hostname
+    if not host:
+        raise OutboundUrlError(f"{purpose} must include a host")
+    if allow_private:
+        return v
+
+    # Literal IP: judge it directly. Hostname: judge every address it resolves to.
+    try:
+        ipaddress.ip_address(host)
+        addresses = [host]
+    except ValueError:
+        try:
+            addresses = _resolve_host(host, parsed.port or (443 if parsed.scheme == "https" else 80))
+        except (socket.gaierror, OSError) as e:
+            raise OutboundUrlError(f"{purpose} host could not be resolved") from e
+        if not addresses:
+            raise OutboundUrlError(f"{purpose} host could not be resolved")
+
+    for addr in addresses:
+        if _is_disallowed_address(addr):
+            raise OutboundUrlError(
+                f"{purpose} points at a private or internal address, which is not allowed"
+            )
     return v
 
 

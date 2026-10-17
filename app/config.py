@@ -53,6 +53,13 @@ class Settings:
     # Demo mode: when true, seeds rich sample data for Trends page
     demo_mode: bool = os.getenv("DEMO_MODE", "0").strip() in ("1", "true", "yes")
 
+    # Outbound URL policy (SSRF guard). User-supplied LLM base URLs and Jira URLs
+    # are refused when they resolve to loopback, private, or link-local addresses,
+    # unless the matching flag is enabled for self-hosted deployments (e.g. Ollama
+    # or Jira Data Center on a LAN). The built-in Ollama default is always allowed.
+    allow_private_llm_urls: bool = os.getenv("ALLOW_PRIVATE_LLM_URLS", "0").strip() in ("1", "true", "yes")
+    allow_private_jira_urls: bool = os.getenv("ALLOW_PRIVATE_JIRA_URLS", "0").strip() in ("1", "true", "yes")
+
     # Celery / Redis
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     celery_broker_url: str = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))

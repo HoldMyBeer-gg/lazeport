@@ -373,6 +373,17 @@ def build_payload_from_notes(
     )
 
 
+# File-path capture used by the location patterns below. Written as
+# "segments joined by separators" with a token-start lookbehind so the regex
+# engine cannot start a match mid-token or re-split the same token many ways;
+# the previous `[\w/.-]+\.\w+` form backtracked quadratically on long
+# dotted tokens in attacker-controlled notes (CodeQL py/polynomial-redos).
+_PATH_RE = r'(?<![\w/.-])([/.]*[\w-]+(?:[/.]+[\w-]+)*\.\w+)'
+# Upper bound on notes text scanned for locations; anything beyond this is
+# not evidence anyone wrote by hand.
+MAX_LOCATION_SCAN_CHARS = 200_000
+
+
 def _extract_locations_from_text(text: str) -> List[EvidenceLocation]:
     """
     Best-effort extraction of file paths from notes text.
@@ -383,10 +394,11 @@ def _extract_locations_from_text(text: str) -> List[EvidenceLocation]:
     - src/component.tsx line 45
     - config.yaml (line 10)
     """
+    text = (text or "")[:MAX_LOCATION_SCAN_CHARS]
     locations = []
     
     # Pattern 1: file:line
-    pattern1 = r'([\w/\.-]+\.\w+):(\d+)'
+    pattern1 = _PATH_RE + r':(\d+)'
     for match in re.finditer(pattern1, text):
         locations.append(EvidenceLocation(
             file=match.group(1),
@@ -394,7 +406,7 @@ def _extract_locations_from_text(text: str) -> List[EvidenceLocation]:
         ))
     
     # Pattern 2: file path with line keyword
-    pattern2 = r'([\w/\.-]+\.\w+)\s+(?:line|ln)\s+(\d+)'
+    pattern2 = _PATH_RE + r'\s+(?:line|ln)\s+(\d+)'
     for match in re.finditer(pattern2, text, re.IGNORECASE):
         locations.append(EvidenceLocation(
             file=match.group(1),
@@ -402,7 +414,7 @@ def _extract_locations_from_text(text: str) -> List[EvidenceLocation]:
         ))
     
     # Pattern 3: file (line N)
-    pattern3 = r'([\w/\.-]+\.\w+)\s*\(\s*(?:line|ln)\s+(\d+)\s*\)'
+    pattern3 = _PATH_RE + r'\s*\(\s*(?:line|ln)\s+(\d+)\s*\)'
     for match in re.finditer(pattern3, text, re.IGNORECASE):
         locations.append(EvidenceLocation(
             file=match.group(1),

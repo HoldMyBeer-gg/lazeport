@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 
 from app.db import get_adapter
 from app.db.adapter import StorageAdapter
 from app.db.models import User
-from app.services.llm import list_ollama_models, PROVIDER_PRESETS
+from app.services.llm import list_ollama_models, PROVIDER_PRESETS, ensure_safe_base_url
+from app.validation import OutboundUrlError
 from app.services.auth import get_current_user
 
 
@@ -47,6 +48,7 @@ def _try_list_models_via_api(provider: str, base_url: str | None, api_key: str |
     if not preset:
         return None
 
+    ensure_safe_base_url(base_url)
     url = (base_url or preset["base_url"]).rstrip("/") + "/models"
     api_key = (api_key or "").strip()
 
@@ -94,6 +96,14 @@ def list_providers(
     }
 
 
+def _reject_unsafe_base_url(base_url: str | None) -> None:
+    """Turn an SSRF-guard rejection of a user-supplied base_url into a 400."""
+    try:
+        ensure_safe_base_url(base_url)
+    except OutboundUrlError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/providers/models")
 def provider_models(
     provider: str = Query("ollama"),
@@ -103,6 +113,7 @@ def provider_models(
 ):
     """List available models for a provider. Requires authentication."""
     provider = (provider or "").lower()
+    _reject_unsafe_base_url(base_url)
 
     if provider == "ollama":
         return {"provider": "ollama", "models": list_ollama_models(base_url_override=base_url)}
@@ -136,6 +147,7 @@ def provider_vision_models(
 ):
     """List vision-capable models for a provider. Requires authentication."""
     provider = (provider or "").lower()
+    _reject_unsafe_base_url(base_url)
 
     if not provider or provider in ("openai", "openai_compatible"):
         return {"provider": "openai", "models": _WELL_KNOWN_VISION.get("openai", ["gpt-4o", "gpt-4o-mini"])}

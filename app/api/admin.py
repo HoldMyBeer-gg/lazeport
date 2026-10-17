@@ -30,7 +30,7 @@ from app.services.rbac import (
     require_organization_admin,
     require_owner,
 )
-from app.validation import ValidatedString, MAX_CONTENT_LENGTH
+from app.validation import ValidatedString, MAX_CONTENT_LENGTH, validate_outbound_url
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 TEMPLATES_DIR = Path(app_settings.templates_dir) if Path(app_settings.templates_dir).is_absolute() else ROOT / app_settings.templates_dir
@@ -445,9 +445,12 @@ class ConnectorPayload(BaseModel):
     def validate_config(cls, v):
         if not isinstance(v, dict):
             raise ValueError("Config must be a dictionary")
-        # Validate specific keys for Jira
+        # Validate specific keys for Jira. The server will fetch this URL, so it
+        # must also pass the SSRF guard (private hosts need ALLOW_PRIVATE_JIRA_URLS).
         if 'url' in v:
             ValidatedString.url_validator(v['url'])
+            from app.config import settings  # call-time import: tests reload app.config
+            validate_outbound_url(v['url'], allow_private=settings.allow_private_jira_urls, purpose="Connector URL")
         if 'email' in v:
             ValidatedString.email_validator(v['email'])
         return v
@@ -3174,6 +3177,7 @@ def test_jira_connection(
 ):
     """Test Jira connection without saving."""
     from app.services.jira import JiraClient
+    from app.validation import OutboundUrlError
     
     config = payload.config
     url = config.get('url', '').strip()
@@ -3183,7 +3187,10 @@ def test_jira_connection(
     if not all([url, email, api_token]):
         raise HTTPException(status_code=400, detail="Missing required fields: url, email, api_token")
     
-    client = JiraClient(url=url, email=email, api_token=api_token)
+    try:
+        client = JiraClient(url=url, email=email, api_token=api_token)
+    except OutboundUrlError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     success, message = client.test_connection()
     
     return {"success": success, "message": message}

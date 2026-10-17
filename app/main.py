@@ -13,6 +13,9 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
+from app.logging_utils import install_log_scrubbing  # noqa: E402
+
+install_log_scrubbing()
 log = logging.getLogger("laze_report")
 
 from fastapi import FastAPI, HTTPException, Request

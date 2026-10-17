@@ -52,6 +52,29 @@ def reset_env_for_llm(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def offline_dns(monkeypatch):
+    """
+    Deterministic resolver for the SSRF guard so tests never touch real DNS.
+
+    'localhost' -> loopback, '*.internal.test' -> private, '*.unresolvable.test'
+    -> lookup failure, anything else -> a public address. Tests that need finer
+    control override app.validation._resolve_host themselves.
+    """
+    import socket
+
+    def _resolve(host, port):
+        if host == "localhost":
+            return ["127.0.0.1"]
+        if host.endswith(".internal.test"):
+            return ["10.0.0.5"]
+        if host.endswith(".unresolvable.test"):
+            raise socket.gaierror(8, "nodename nor servname provided, or not known")
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr("app.validation._resolve_host", _resolve)
+
+
+@pytest.fixture(autouse=True)
 def init_db():
     """Initialize fresh database for each test."""
     from app.db import get_adapter
