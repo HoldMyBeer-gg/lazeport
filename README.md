@@ -10,7 +10,7 @@ Modern pentest reporting platform: organize clients and reports, generate AI-str
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourusername/lazeport.git
+git clone https://github.com/HoldMyBeer-gg/lazeport.git
 cd lazeport
 pip install -r requirements.txt
 cd frontend && pnpm install && cd ..
