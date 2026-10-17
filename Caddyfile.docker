@@ -6,20 +6,7 @@ lazeport.pwn.zone {
     header -Via
     header -Server
 
-    # Landing page at root
-    handle /index.html {
-        root * /srv/landing
-        file_server
-    }
-    handle / {
-        root * /srv/landing
-        file_server
-    }
-
-    # Everything else goes to the app
-    handle {
-        reverse_proxy app:8000
-    }
+    reverse_proxy app:8000
 
     log {
         output stdout

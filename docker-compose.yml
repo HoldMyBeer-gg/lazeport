@@ -93,7 +93,6 @@ services:
       - "443:443/udp" # HTTP/3
     volumes:
       - ./Caddyfile.docker:/etc/caddy/Caddyfile:ro
-      - ./landing:/srv/landing:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

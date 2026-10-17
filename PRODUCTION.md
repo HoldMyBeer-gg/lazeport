@@ -64,7 +64,7 @@ docker compose up -d
 
 ### Setup
 
-1. **Update Caddyfile.docker** - Replace `lazeport.pwn.zone` with your domain. The shipped file also strips the `Via` and `Server` headers, proxies everything to `app:8000`, and serves a static landing page from `./landing` at `/` (remove the two landing `handle` blocks if you don't ship one):
+1. **Update Caddyfile.docker** - Replace `lazeport.pwn.zone` with your domain. The shipped file also strips the `Via` and `Server` headers and proxies everything to `app:8000`:
 
    ```caddyfile
    lazeport.yourdomain.com {
@@ -72,9 +72,7 @@ docker compose up -d
        header -Via
        header -Server
 
-       handle {
-           reverse_proxy app:8000
-       }
+       reverse_proxy app:8000
 
        log {
            output stdout
