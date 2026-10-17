@@ -4,6 +4,25 @@ Modern pentest reporting platform: organize clients and reports, generate AI-str
 
 **Cross-platform:** Windows, macOS, and Linux.
 
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/clients.webp" alt="Clients page: client list with tags and per-client report actions" /></td>
+    <td width="50%"><img src="docs/screenshots/trends.webp" alt="Trends dashboard: open findings over time, aging distribution, client by severity heatmap, remediation performance" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Clients</sub></td>
+    <td align="center"><sub>Trends</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/findings.webp" alt="Report findings page: paste notes to generate a finding, with the findings list and tag filters below" /></td>
+    <td width="50%"><img src="docs/screenshots/settings.webp" alt="Settings page: profile, API keys, members, LLM, SSO, email, security, validation and audit log tabs" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Findings</sub></td>
+    <td align="center"><sub>Settings</sub></td>
+  </tr>
+</table>
+
 ---
 
 ## Quick Start
