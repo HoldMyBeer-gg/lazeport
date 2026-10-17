@@ -8,16 +8,20 @@ Modern pentest reporting platform: organize clients and reports, generate AI-str
 
 ## Quick Start
 
+**Prerequisites:** Python 3.12+, Node.js 20.9+, [pnpm](https://pnpm.io) 10, and Redis. AI generation and scanner imports run as background jobs through Redis and a Celery worker, so the backend alone is not enough for those features.
+
 ```bash
 # 1. Clone and install
 git clone https://github.com/HoldMyBeer-gg/lazeport.git
 cd lazeport
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cd frontend && pnpm install && cd ..
 
 # 2. Run
-./run.sh          # macOS/Linux
-run.bat           # Windows
+./run.sh --tmux   # macOS/Linux: Redis + Celery worker + backend + frontend dev in one tmux session
+./run.sh          # macOS/Linux: backend only (start redis-server and a Celery worker yourself)
+run.bat           # Windows: backend only (start redis-server and a Celery worker yourself)
 
 # 3. Open http://localhost:8000
 ```
@@ -27,9 +31,9 @@ run.bat           # Windows
 | Field | Value |
 |-------|-------|
 | Email | `admin@local.domain` |
-| Password | the value after `ADMIN_PASSWORD=` in `data/.admin_password` |
+| Password | printed once in the terminal inside the `LAZEPORT FIRST-RUN` banner, and saved to `data/.admin_password` |
 
-> The password is randomly generated on first run and written to `data/.admin_password`. Example: if the file contains `ADMIN_PASSWORD=abc123`, your password is `abc123`.
+> The password is randomly generated on first run. If you missed the banner, it is the value after `ADMIN_PASSWORD=` in `data/.admin_password`. Change it after your first login.
 
 **That's it.** For LLM setup, Docker, production HTTPS, and advanced features, expand the sections below.
 
@@ -41,7 +45,7 @@ run.bat           # Windows
 2. **Create reports** → "My Reports" → select client → new report
 3. **Manage templates** → "My Templates" → create finding templates, upload master `.docx` templates
 4. **Add findings** → open a report → either:
-   - **Bulk import**: drag-and-drop SARIF (`.sarif`, `.json`) or Burp XML (`.xml`) into the findings page
+   - **Bulk import**: drag-and-drop SARIF (`.sarif`, `.json`), Burp XML (`.xml`), Nessus or OpenVAS XML (`.nessus`, `.xml`), or CSV into the findings page
    - **Individual**: select template → paste raw notes → click "Generate"
 5. **Generate summaries** → click "Generate Summaries with AI"
 6. **Export** → Master DOCX (full professional report) or SARIF (CI/CD integration)
@@ -57,7 +61,7 @@ run.bat           # Windows
 |---------|--------------|
 | **Client Management** | Organize work by client. Create, edit, and delete clients from "My Clients". |
 | **Report Management** | Create multiple reports per client. Track findings per engagement. |
-| **Scanner Import** | Drag-and-drop SARIF or Burp XML into the findings page. Auto-merges duplicates, preserves locations, and queues for AI generation. Supports resume for large imports. |
+| **Scanner Import** | Drag-and-drop SARIF, Burp XML, Nessus or OpenVAS XML, or CSV into the findings page. Auto-merges duplicates, preserves locations, and queues for AI generation. Supports resume for large imports. |
 | **Finding Generation** | Paste raw notes from manual testing or scanners. AI structures them into professional findings with proper sections (Summary, Details, Remediation, References, etc.). |
 | **AI Self-Check** | Optional multi-pass validation — AI reviews its own output for accuracy before finalizing. |
 | **Evidence Anchoring** | SARIF imports anchor all file paths and metadata to scanner output, preventing hallucinations and ensuring correct SARIF round-trips. Link evidence to exact source locations (URL, line, byte range). |
@@ -67,6 +71,7 @@ run.bat           # Windows
 | **Master DOCX Templates** | Upload `.docx` templates with placeholder tokens (`{{ CLIENT_NAME }}`, `{{ YEAR }}`, `{{ FINDINGS_HIGH }}`, etc.). |
 | **Report Summaries** | AI-generated executive, technical, and recommendations summaries from all findings. Included in master DOCX export. |
 | **Master Report Export** | One-click complete pentest report with all findings, summaries, and metadata in professional DOCX. SARIF export for CI/CD integration. |
+| **Report Sharing** | Share a single report with members of another organization without exposing anything else. |
 | **Connectors** | Connect external tools like Jira for seamless workflow integration. |
 
 ### LLM & AI
@@ -74,7 +79,7 @@ run.bat           # Windows
 | Feature | What it does |
 |---------|--------------|
 | **Multi-Provider Support** | Ollama (local), OpenAI, Anthropic, Gemini, Groq, and more. Select your provider in Settings — no environment variables needed. |
-| **UI-Selected Models** | Choose provider, model, and API key in the UI. Settings persist in localStorage. |
+| **UI-Selected Models** | Choose provider, model, and API key in the UI. API keys are stored encrypted in your user profile; nothing goes in environment variables. |
 | **Severity Classification** | AI respects your org's severity criteria defined in master templates. |
 | **Hyperlink Detection** | Auto-converts CWE-XXX, CVE-XXXX-XXXX, CVSS vectors, and URLs to clickable links in DOCX. |
 
@@ -98,7 +103,10 @@ run.bat           # Windows
 | **Database Storage** | Docker: PostgreSQL. Non-Docker: SQLite. Sensitive data encrypted at rest. |
 | **Encrypted Credentials** | Connector API tokens encrypted with Fernet (AES-128). |
 | **Audit Trail** | Tracks auth, clients, reports, findings, templates, connectors, and settings. View in **Organization → Audit Logs**. |
-| **2FA Support** | TOTP-based two-factor authentication with recovery codes. |
+| **2FA Support** | TOTP-based two-factor authentication with recovery codes. Organization admins can set a 2FA policy for all members. |
+| **SSO (OIDC)** | Per-organization OpenID Connect login (Okta, Microsoft Entra ID, Google, Auth0, and others). Configured by the organization admin. |
+| **Personal API Keys** | Generate `lp_` keys in Settings for scripted access; only a hash is stored. |
+| **Outbound URL Guard** | User-supplied LLM and Jira URLs are refused if they point at loopback, private, or link-local addresses (SSRF protection). Opt-in flags exist for LAN-hosted services. |
 
 ### UI & UX
 
@@ -110,6 +118,7 @@ run.bat           # Windows
 | **Background Task Queue** | Long-running imports show progress notifications. Click to navigate to report. |
 | **Bulk Operations** | Select multiple findings for bulk delete or consolidation. |
 | **Multi-Language Support** | English, German, Spanish (Latin America), Hebrew, Chinese (Simplified). Set in Settings. |
+| **Trends Dashboard** | Severity and finding trends across reports, with saveable filter presets. |
 
 </details>
 
@@ -125,7 +134,11 @@ Configure your provider in **Settings → LLM Provider**:
 3. Enter your API key (if required) and base URL (if using a custom/compatible endpoint)
 4. Select your model from the available list
 
-Your choices persist in **localStorage** across sessions. No environment variables needed.
+Your API keys are saved **encrypted in your user profile** on the server. No environment variables needed.
+
+### Self-hosted endpoints on a private network
+
+Lazeport refuses to call a user-supplied base URL that resolves to a loopback, private, or link-local address (SSRF protection). The built-in Ollama default, `http://localhost:11434`, is always allowed. If your Ollama, LM Studio, or other OpenAI-compatible server lives on a LAN address, set `ALLOW_PRIVATE_LLM_URLS=1` on the server. The same guard applies to Jira; use `ALLOW_PRIVATE_JIRA_URLS=1` for a self-hosted Jira on a private network.
 
 ### Adding a new provider
 
@@ -214,9 +227,13 @@ Definitions can be formatted as:
 
 ### Authentication
 
-Local admin auth with session cookies. On first startup a bootstrap admin password is generated and saved to `data/.admin_password`. Username: `admin@local.domain`.
+Local admin auth with session cookies. On first startup a bootstrap admin password is generated, printed once to the terminal, and saved to `data/.admin_password`. Username: `admin@local.domain`.
+
+**SSO:** an organization admin can configure an OpenID Connect provider for their organization; members of that organization then sign in through the identity provider. Set `PUBLIC_APP_URL` so the callback URL is correct.
 
 **RBAC roles (org level):** org_owner, org_admin, consultant, readonly.
+
+Idle sessions expire after `SESSION_TIMEOUT_MINUTES` (default 30).
 
 ```bash
 # Disable auth for local development (never in production)
@@ -225,7 +242,7 @@ export AUTH_DISABLED=1
 
 ### Two-Factor Authentication
 
-All users can enable optional TOTP-based 2FA:
+All users can enable TOTP-based 2FA, and an organization admin can set a 2FA policy for everyone in the organization:
 
 1. Go to **Settings → Enable 2FA**
 2. Scan the QR code with your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.)
@@ -243,6 +260,8 @@ export DISABLE_2FA=1
 SESSION_SECRET_KEY=your-random-secret-here
 APP_SECRET_KEY=your-random-secret-here
 ```
+
+The app reads real environment variables only; it does not load a `.env` file by itself. Docker Compose passes `data/.env` to the containers (copy `.env.example` there). For native deployments, export the variables or use a systemd `EnvironmentFile` (see [PRODUCTION.md](PRODUCTION.md)).
 
 ### Database
 
@@ -272,10 +291,15 @@ pip install -r requirements.txt
 
 cd frontend && pnpm install && pnpm run build && cd ..
 
+# Terminal 1: Redis (brew install redis / apt install redis-server)
+redis-server
+# Terminal 2: background worker (AI generation, scanner imports)
+celery -A app.celery_app worker --loglevel=info
+# Terminal 3: API, serving the built frontend
 uvicorn app.main:app --reload
 ```
 
-Or use the helper scripts: **`./run.sh`** (macOS/Linux) / **`run.bat`** (Windows).
+Or use the helper scripts: **`./run.sh --tmux`** launches all of the above in one tmux session (macOS/Linux); **`./run.sh`** / **`run.bat`** start the backend only.
 
 Open **http://127.0.0.1:8000**.
 
@@ -312,10 +336,11 @@ Access at **http://localhost:8000**.
 ```bash
 # Prerequisites:
 # 1. Domain name pointing to this server
-# 2. Edit Caddyfile.docker — uncomment and add your domain
-# 3. Open ports 80 and 443
+# 2. Edit Caddyfile.docker and replace lazeport.pwn.zone with your domain
+# 3. Copy .env.example to data/.env and set the secrets
+# 4. Open ports 80 and 443
 
-docker-compose up -d
+docker compose up -d
 ```
 
 Caddy automatically obtains and renews SSL certificates from Let's Encrypt.
@@ -346,14 +371,22 @@ Access at `https://localhost:8000` with a trusted certificate (no browser warnin
 <summary><strong>Tests</strong></summary>
 
 ```bash
-pip install -r requirements.txt   # includes pytest, pytest-cov
-python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+pip install -r requirements.txt   # includes pytest, pytest-cov, pytest-xdist
+python -m pytest tests/ --ignore=tests/e2e -n auto --cov=app --cov-report=term-missing --cov-report=html
 ```
 
 - Terminal shows coverage % and missing lines
 - HTML report: open `htmlcov/index.html` for a line-by-line view
+- Tests never touch the network: DNS lookups made by the SSRF guard are stubbed in `tests/conftest.py`
 
 Use **`./run_tests.sh`** (macOS/Linux) / **`run_tests.bat`** (Windows) as a shortcut.
+
+The browser end-to-end tests in `tests/e2e/` start their own server on port 8787 and need Playwright:
+
+```bash
+pip install playwright && playwright install chromium
+python -m pytest tests/e2e
+```
 
 </details>
 
@@ -362,14 +395,17 @@ Use **`./run_tests.sh`** (macOS/Linux) / **`run_tests.bat`** (Windows) as a shor
 <details>
 <summary><strong>Environment Variables</strong></summary>
 
-All have sensible defaults. For production, set at minimum `SESSION_SECRET_KEY` and `APP_SECRET_KEY`.
+All have sensible defaults. For production, set at minimum `SESSION_SECRET_KEY`, `APP_SECRET_KEY`, and `PUBLIC_APP_URL`. The app reads real environment variables; Docker Compose supplies them from `data/.env`.
 
 | Variable | Description |
 |----------|-------------|
 | `SESSION_SECRET_KEY` | Session signing key. |
-| `APP_SECRET_KEY` | Encryption key for bootstrap admin password. |
+| `APP_SECRET_KEY` | Secret from which the encryption key for stored secrets is derived (connector tokens, LLM API keys, 2FA secrets). Changing it makes existing encrypted values unreadable. |
+| `SESSION_TIMEOUT_MINUTES` | Idle session timeout in minutes (default: `30`). |
 | `AUTH_DISABLED` | `1` to bypass auth (dev/test only). |
 | `DISABLE_2FA` | `1` to disable 2FA globally (dev/test only). |
+| `ALLOW_PRIVATE_LLM_URLS` | `1` to let user-supplied LLM base URLs point at private, loopback, or link-local hosts (self-hosted Ollama or LM Studio on a LAN). Default: refused. The built-in `http://localhost:11434` Ollama default is always allowed. |
+| `ALLOW_PRIVATE_JIRA_URLS` | Same as above for Jira connector URLs (self-hosted Jira on a private network). Default: refused. |
 | `DB_ADAPTER` | `sql` for SQLite/Postgres. |
 | `DATABASE_URL` | Connection string (default: `sqlite:///./data/lazeport.db`). |
 | `REDIS_URL` | Redis connection URL (default: `redis://localhost:6379/0`). |
