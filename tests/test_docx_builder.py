@@ -191,3 +191,18 @@ class TestBuildDocx:
         # Verify actual content is present
         assert "Test vulnerability" in xml
         assert "More information" in xml
+
+
+class TestDeriveTableValuesAffected:
+    """Affected Roles/Users default to the evidence placeholder, not an invented 'All Users'."""
+
+    def test_missing_affected_uses_placeholder(self):
+        from app.services.docx_builder import _derive_table_values
+        values = _derive_table_values({"Severity": "High"})
+        assert values["Affected Roles"] == "Not provided in evidence"
+        assert values["Affected Users"] == "Not provided in evidence"
+
+    def test_stated_affected_kept(self):
+        from app.services.docx_builder import _derive_table_values
+        values = _derive_table_values({"Severity": "High", "Affected Roles": "Authenticated users"})
+        assert values["Affected Roles"] == "Authenticated users"

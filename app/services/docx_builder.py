@@ -297,8 +297,8 @@ def _derive_table_values(structured: Dict[str, Any]) -> dict[str, str]:
         default_score = (_SEVERITY_TO_CVSS.get(severity) if severity else None) or "6.1"
         values["CVSS v3.1"] = f"{default_score} (CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N)"
     affected = str(structured.get("Affected Roles") or structured.get("Affected Users") or "").strip()
-    values["Affected Roles"] = affected or "All Users"
-    values["Affected Users"] = affected or "All Users"
+    values["Affected Roles"] = affected or "Not provided in evidence"
+    values["Affected Users"] = affected or "Not provided in evidence"
     return values
 
 

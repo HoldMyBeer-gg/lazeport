@@ -106,7 +106,7 @@ def derive_table_values(
             values["CVSS v3.1"] = f"{default_score} ({DEFAULT_XSS_VECTOR})"
 
     affected = structured.get("Affected Roles") or structured.get("Affected Users") or ""
-    default_affected = "All Users"
+    default_affected = "Not provided in evidence"
     if overrides.get("Affected Roles"):
         values["Affected Roles"] = overrides["Affected Roles"]
     elif affected:

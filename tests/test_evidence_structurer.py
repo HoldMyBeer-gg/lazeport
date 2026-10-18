@@ -104,3 +104,52 @@ class TestRawHttpRequestResponseInjection:
         # Empty artifacts: do not overwrite with empty string (we only set when strip() is truthy)
         assert structured.get("Raw HTTP Request") is None or structured.get("Raw HTTP Request") == ""
         assert structured.get("Raw HTTP Response") is None or structured.get("Raw HTTP Response") == ""
+
+
+TEMPLATE_WITH_AFFECTED_ROLES = """
+<b>Vulnerability Summary</b>
+<b>Severity</b>
+<table><tr><td>Severity</td><td>x</td></tr><tr><td>Affected Roles</td><td>y</td></tr></table>
+"""
+
+
+class TestAffectedRolesNotInvented:
+    """When the evidence names no affected roles, the field gets the placeholder, never a guessed 'All Users'."""
+
+    @pytest.fixture
+    def evidence(self):
+        payload = EvidencePayload(
+            schema_version="v1",
+            source=EvidenceSource(type="sarif", tool="Semgrep", rule_id="x"),
+            verbatim_text="Reflected XSS in search parameter",
+            locations=[],
+            artifacts={},
+        )
+        return {
+            "rule_id": "x", "tool": "Semgrep", "title": "XSS", "description": "D",
+            "remediation": "R", "locations": [], "source_type": "sarif", "_payload_object": payload,
+        }
+
+    @patch("app.services.llm.is_llm_available", return_value=True)
+    @patch("app.services.llm.chat_completion")
+    def test_prompt_tells_model_to_use_placeholder(self, mock_chat, _mock_available, evidence):
+        # The model must return every field; the prompt is what keeps it from guessing roles
+        mock_chat.return_value = '{"Vulnerability Summary": "S", "Severity": "Medium", "Affected Roles": "Not provided in evidence"}'
+        structured, _ = structure_from_evidence(notes="", evidence=evidence, template_markdown=TEMPLATE_WITH_AFFECTED_ROLES)
+        prompt = str(mock_chat.call_args)
+        assert 'For Affected Roles: only include roles stated in the evidence; otherwise write \\"Not provided in evidence\\"' in prompt or \
+            'For Affected Roles: only include roles stated in the evidence; otherwise write "Not provided in evidence"' in prompt
+        assert "All Users" not in prompt
+        assert structured.get("Affected Roles") == "Not provided in evidence"
+
+    @patch("app.services.llm.is_llm_available", return_value=True)
+    @patch("app.services.llm.chat_completion")
+    def test_stated_affected_roles_kept(self, mock_chat, _mock_available, evidence):
+        mock_chat.return_value = '{"Vulnerability Summary": "S", "Severity": "Medium", "Affected Roles": "Administrators"}'
+        structured, _ = structure_from_evidence(notes="", evidence=evidence, template_markdown=TEMPLATE_WITH_AFFECTED_ROLES)
+        assert structured.get("Affected Roles") == "Administrators"
+
+    def test_prompt_no_longer_suggests_all_users_default(self):
+        import inspect
+        from app.services import evidence_structurer
+        assert '"All Users" for Affected Roles' not in inspect.getsource(evidence_structurer)

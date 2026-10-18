@@ -348,3 +348,12 @@ class TestRequiredSectionValidation:
 
         assert mock_llm.call_count == 1, "No retry expected when output is complete"
         assert out["Severity"] == "High"
+
+
+def test_affected_roles_fallback_is_placeholder_not_all_users():
+    """Neither the prompt nor the fallback may invent 'All Users' when the notes name no affected roles."""
+    import inspect
+    from app.services import structurer
+    src = inspect.getsource(structurer)
+    assert "set it to 'All Users'" not in src
+    assert 'structured[key] = "All Users"' not in src

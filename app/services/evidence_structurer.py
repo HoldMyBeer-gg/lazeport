@@ -247,7 +247,7 @@ CRITICAL INSTRUCTIONS:
    - For CWE: suggest the most specific applicable CWE ID (e.g. CWE-79) based on the vulnerability type
    - For OWASP: suggest the applicable OWASP Top 10 2021 category (e.g. A03:2021)
    - For CVSS v3.1: only include if explicitly present in the evidence
-   - Use sensible defaults for user-facing fields (e.g., "All Users" for Affected Roles)
+   - For Affected Roles: only include roles stated in the evidence; otherwise write "Not provided in evidence"
 8. For narrative fields: Write based on evidence; if evidence doesn't support a narrative section, write "Not provided in evidence"
 9. Base your analysis ONLY on the evidence provided - do not invent file paths, URLs, or technical details
 10. Preserve all technical identifiers from evidence (CVE, CWE, OWASP, CVSS IDs, file paths, URLs) verbatim if present{language_instruction}{org_text}
@@ -337,23 +337,13 @@ Return your response as a JSON object with the section names as keys and narrati
             filled["_model_retry"] = True
             filled["_validation_flags"] = filled.get("_validation_flags", []) + ["retry_successful"]
         
-        # Ensure all template sections exist with smart defaults
-        # Table fields that should have defaults, not "Not provided in evidence"
-        TABLE_FIELDS_WITH_DEFAULTS = {
-            "Affected Roles": "All Users",
-            "Affected Users": "All Users",
-        }
-        
+        # Ensure all template sections exist; anything the evidence did not support
+        # (including Affected Roles/Users) gets the explicit placeholder, never a guess
         for key in section_keys:
             if key in SYSTEM_OWNED_FIELDS:
                 continue  # Skip system-owned fields
             if key not in filled or not str(filled.get(key, "")).strip():
-                # Use smart defaults for table/metadata fields
-                if key in TABLE_FIELDS_WITH_DEFAULTS:
-                    filled[key] = TABLE_FIELDS_WITH_DEFAULTS[key]
-                else:
-                    # For narrative sections, use explicit placeholder
-                    filled[key] = "Not provided in evidence"
+                filled[key] = "Not provided in evidence"
         
         # Ensure title field
         if "title" not in filled or not filled.get("title"):

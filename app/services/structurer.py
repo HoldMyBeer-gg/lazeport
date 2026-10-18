@@ -335,7 +335,7 @@ Informational — Information that may be of interest to an attacker. May provid
         "Use only the section names as keys (plus optional 'title'). No markdown in the values, plain text with newlines where needed. "
         "Mention severity as one of: Critical, High, Medium, Low, or Informational — this field is mandatory and must always be populated; never leave it empty, null, or use a number or code-style level. "
         "For table-style fields (Severity, Affected Roles, Affected Users, Affected Files): use short values in exact format. Keep these table/enum values canonical and un-translated (Severity MUST be exactly Critical/High/Medium/Low/Informational). For CWE: suggest the most specific applicable CWE ID (e.g. CWE-79). For OWASP: suggest the applicable OWASP Top 10 2021 category (e.g. A03:2021). For CVSS v3.1: only include if explicitly present in the evidence. Include every CVE mentioned in the notes. "
-        "If Affected Roles or Affected Users is not specified in the notes, set it to 'All Users'. "
+        "If Affected Roles or Affected Users is not specified in the notes, set it to 'Not provided in evidence'. "
         "For Affected Files: extract all file paths mentioned in the notes, preserving line numbers where specified (e.g. 'app/MainActivity.kt:47'). List one per line. This is critical for SARIF imports and code-level findings. "
         "Preserve all evidence from the notes: include URLs, HTTP requests/responses, console and tool output, and screenshot references. Put any raw or console-type output into a code block and include it (e.g. in Additional Notes or at the end in a 'Raw evidence' section) so the client can reproduce."
     )
@@ -638,7 +638,7 @@ def _normalize_structured_output(structured: Dict[str, Any], section_keys: list[
             # Leave empty if not found - file locations are optional
             pass
         elif key in ("Affected Roles", "Affected Users"):
-            structured[key] = "All Users"
+            structured[key] = "Not provided in evidence"
         else:
             structured[key] = "Not specified in testing."
 

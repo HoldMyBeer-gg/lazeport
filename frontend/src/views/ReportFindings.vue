@@ -3266,7 +3266,7 @@ onUnmounted(() => {
                             <span v-if="metaKey === 'Severity' && editForm.sections._meta && editForm.sections._meta[metaKey]" :class="['pill', editForm.sections._meta[metaKey].toLowerCase()]">
                               {{ editForm.sections._meta[metaKey] }}
                             </span>
-                            <span v-else-if="editForm.sections._meta && editForm.sections._meta[metaKey]">
+                            <span v-else-if="editForm.sections._meta && editForm.sections._meta[metaKey] && editForm.sections._meta[metaKey] !== 'Not provided in evidence'">
                               {{ editForm.sections._meta[metaKey] }}
                             </span>
                             <span v-else class="muted">{{ $t('findings.notProvided') }}</span>
