@@ -267,8 +267,6 @@ def _collect_urls_from_structured(structured: Dict[str, Any], row_labels: list[s
     return urls
 
 
-_SEVERITY_TO_CVSS = {"Critical": "9.8", "High": "7.5", "Medium": "5.3", "Low": "3.1", "Informational": "0.0"}
-
 
 def _derive_table_values(structured: Dict[str, Any]) -> dict[str, str]:
     """Derive table values (Severity/CVSS/CWE/OWASP) from structured content when missing."""
@@ -284,8 +282,9 @@ def _derive_table_values(structured: Dict[str, Any]) -> dict[str, str]:
     m = OWASP_TOKEN_RE.search(text)
     if m:
         values["OWASP"] = m.group(0).upper()
-    # CVSS score + vector: use severity-based default when no parseable CVSS
-    cvss_text = str(structured.get("CVSS v3.1", "")) + "\n" + text
+    # CVSS score + vector: never invent either. Keep the stated value verbatim or mark the gap.
+    stated_cvss = str(structured.get("CVSS v3.1", "") or "").strip()
+    cvss_text = stated_cvss + "\n" + text
     score_match = re.search(r"\b([0-9]\.[0-9])\b", cvss_text)
     vector_match = CVSS_VECTOR_RE.search(cvss_text)
     if score_match and vector_match:
@@ -294,8 +293,7 @@ def _derive_table_values(structured: Dict[str, Any]) -> dict[str, str]:
             vector = f"CVSS:3.1/{vector}"
         values["CVSS v3.1"] = f"{score_match.group(1)} ({vector})"
     else:
-        default_score = (_SEVERITY_TO_CVSS.get(severity) if severity else None) or "6.1"
-        values["CVSS v3.1"] = f"{default_score} (CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N)"
+        values["CVSS v3.1"] = stated_cvss or "Not provided in evidence"
     affected = str(structured.get("Affected Roles") or structured.get("Affected Users") or "").strip()
     values["Affected Roles"] = affected or "Not provided in evidence"
     values["Affected Users"] = affected or "Not provided in evidence"

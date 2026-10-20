@@ -21,15 +21,10 @@ OWASP_RE = re.compile(r"\bA\d{1,2}(?::20\d{2})?\b", re.IGNORECASE)
 SCORE_RE = re.compile(r"\b([0-9]\.[0-9])\b")
 SEVERITY_RE = re.compile(r"\b(Critical|High|Medium|Low|Informational|Information)\b", re.IGNORECASE)
 
-DEFAULT_XSS_VECTOR = "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
-SEVERITY_TO_CVSS_SCORE = {
-    "Critical": "9.8",
-    "High": "7.5",
-    "Medium": "5.3",
-    "Low": "3.1",
-    "Informational": "0.0",
-}
-DEFAULT_CVSS_SCORE = "6.1"
+# Written into metadata fields when the evidence does not state a value.
+# Never invent a CVSS score or vector: the structurer prompt forbids inferring CVSS,
+# and a fabricated vector in a report is worse than an explicit gap.
+NOT_PROVIDED = "Not provided in evidence"
 CANONICAL_SEVERITIES = {"Critical", "High", "Medium", "Low", "Informational"}
 
 def validate_cwe(cwe_str: str) -> str | None:
@@ -100,13 +95,12 @@ def derive_table_values(
                 vec = f"CVSS:3.1/{vec}"
             values["CVSS v3.1"] = f"{score.group(1)} ({vec})"
         else:
-            default_score = SEVERITY_TO_CVSS_SCORE.get(severity.strip()) if severity else DEFAULT_CVSS_SCORE
-            if not default_score:
-                default_score = DEFAULT_CVSS_SCORE
-            values["CVSS v3.1"] = f"{default_score} ({DEFAULT_XSS_VECTOR})"
+            # Keep whatever the evidence or tester stated verbatim; otherwise mark the gap.
+            stated = str(structured.get("CVSS v3.1") or "").strip()
+            values["CVSS v3.1"] = stated or NOT_PROVIDED
 
     affected = structured.get("Affected Roles") or structured.get("Affected Users") or ""
-    default_affected = "Not provided in evidence"
+    default_affected = NOT_PROVIDED
     if overrides.get("Affected Roles"):
         values["Affected Roles"] = overrides["Affected Roles"]
     elif affected:

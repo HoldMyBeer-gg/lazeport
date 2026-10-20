@@ -129,6 +129,24 @@ class TestBuildDocx:
         assert "cwe.mitre.org" in rels
         assert "example.com" in rels
 
+    def test_missing_cvss_renders_placeholder_not_invented_vector(self):
+        template = "<b>Justification</b><table><tr><td>Severity</td><td>High</td></tr>"
+        template += "<tr><td>CVSS v3.1</td><td>link</td></tr></table><b>Rationale</b>"
+        out = build_docx(
+            structured={
+                "title": "T",
+                "Justification": "SQL injection in the login form.",
+                "Severity": "High",
+                "Rationale": "Reason.",
+            },
+            template=template,
+            title="T",
+        )
+        xml = _docx_paragraph_texts(out)
+        assert "Not provided in evidence" in xml
+        assert "AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N" not in xml
+        assert "7.5" not in xml
+
     def test_cvss_vector_creates_calculator_link(self, monkeypatch):
         def fake_valid_urls(urls):
             return set(urls)
