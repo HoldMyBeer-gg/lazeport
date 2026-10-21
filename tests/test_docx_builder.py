@@ -125,9 +125,9 @@ class TestBuildDocx:
             title="T",
         )
         rels = _docx_relationships(out)
-        assert "nvd.nist.gov" in rels
-        assert "cwe.mitre.org" in rels
-        assert "example.com" in rels
+        assert "https://nvd.nist.gov/vuln/detail/CVE-2021-1234" in rels
+        assert "https://cwe.mitre.org/data/definitions/79.html" in rels
+        assert "https://example.com/advisory" in rels
 
     def test_missing_cvss_renders_placeholder_not_invented_vector(self):
         template = "<b>Justification</b><table><tr><td>Severity</td><td>High</td></tr>"
